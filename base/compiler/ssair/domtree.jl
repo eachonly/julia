@@ -82,7 +82,7 @@ function construct_domtree(cfg::CFG)
         for dom in doms
             i == dom && continue
             let i = i, dom = dom
-                any(p -> (p !== i && p !== dom && dom in dominators[p]), doms) && continue
+                _any(p -> (p !== i && p !== dom && dom in dominators[p]), doms) && continue
             end
             idoms[i] = dom
         end
