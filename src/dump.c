@@ -1066,6 +1066,8 @@ static void jl_collect_backedges(jl_array_t *s)
 {
     arraylist_t to_restore;
     arraylist_new(&to_restore, 0);
+    htable_t seen;
+    htable_new(&seen, 0);
     size_t i;
     void **table = edges_map.table;
     for (i = 0; i < edges_map.size; i += 2) {
@@ -1079,6 +1081,18 @@ static void jl_collect_backedges(jl_array_t *s)
                     jl_collect_backedges_to((jl_method_instance_t*)c, callees, &to_restore);
                 }
             }
+            size_t j; l = jl_array_len(callees);
+            for(j = 0; j < l; j++) {
+                jl_value_t *c = jl_array_ptr_ref(callees, j);
+                ptrhash_put(&seen, c, c);
+            }
+            jl_array_del_end(callees, l);
+            void **pseen = seen.table;
+            for(j = 0; j < seen.size; j += 2) {
+                if (pseen[j+1] != HT_NOTFOUND)
+                    jl_array_ptr_1d_push(callees, (jl_value_t*)pseen[j]);
+            }
+            htable_reset(&seen, 100);
             jl_array_ptr_1d_push(s, (jl_value_t*)caller);
             jl_array_ptr_1d_push(s, (jl_value_t*)callees);
             while (to_restore.len) {
@@ -1087,6 +1101,7 @@ static void jl_collect_backedges(jl_array_t *s)
             }
         }
     }
+    htable_free(&seen);
 }
 
 // serialize information about all loaded modules
